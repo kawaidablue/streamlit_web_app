@@ -6,9 +6,8 @@ import time
 import csv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+import chromedriver_autoinstaller
 import os
 
 # Streamlit の UI
@@ -22,6 +21,7 @@ num_pages = st.number_input("スクレイピングするページ数を入力し
 
 # Seleniumの設定
 def get_webdriver():
+    chromedriver_autoinstaller.install()  # ChromeDriver を自動インストール
     options = Options()
     options.add_argument("--headless")  # GUIなし
     options.add_argument("--no-sandbox")
@@ -29,7 +29,7 @@ def get_webdriver():
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     
-    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    return webdriver.Chrome(options=options)
 
 # スクレイピングを実行する関数
 def scrape_bizmaps(base_url, num_pages):
@@ -137,21 +137,3 @@ def scrape_company_data(input_csv, output_csv):
     # CSVに保存
     df.to_csv(output_csv, index=False, encoding="utf-8-sig")
     return df
-
-# ボタンを押したらスクレイピング開始
-if st.button("スクレイピング開始"):
-    urls = scrape_bizmaps(base_url, num_pages)
-    df_urls = pd.DataFrame(urls, columns=["取得したURL"])
-    st.dataframe(df_urls)
-
-    csv_filename = "scraped_urls.csv"
-    st.success(f"CSVファイル {csv_filename} に保存しました！")
-    st.download_button("CSVをダウンロード", data=df_urls.to_csv(index=False), file_name=csv_filename, mime='text/csv')
-
-# 企業情報取得ボタン
-if st.button("企業情報を取得"):
-    company_df = scrape_company_data("scraped_urls.csv", "company_data.csv")
-    if not company_df.empty:
-        st.dataframe(company_df)
-        st.success("企業情報を取得し、CSVに保存しました！")
-        st.download_button("企業データをダウンロード", data=company_df.to_csv(index=False), file_name="company_data.csv", mime='text/csv')
